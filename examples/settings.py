@@ -1,8 +1,10 @@
+from os import path
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 DATABASE_ENGINE = 'sqlite3'
-DATABASE_NAME = 'test.db'
+DATABASE_NAME = path.join(path.dirname(__file__), 'test.db')
 
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.load_template_source',
