@@ -1,0 +1,224 @@
+===============================
+Django/Xappy search integration
+===============================
+
+Bridges Xappy (an interface to the Xapian search engine) with Django.
+
+While other projects, like the GSoC 2008 project[1] try to be generic
+and support a common set of functionality, this allows you to take
+full advantage of the features provided by Xappy. On the downside, it
+is Xappy-specific.
+
+
+[1] http://code.google.com/p/djangosearch/
+
+
+Dependencies
+============
+
+Just Python 2.5, Django and Xappy. Xappy should be a recent version,
+the app is currently written against revision 252.
+
+
+Usage
+=====
+
+django-xappy was originally designed for a project with an index
+spanning multiple models. As such, keep in mind that if you're use case
+is simpler, usage may currently not be as straightforward and easy as
+it could be.
+
+In the case that one index does include multiple models, the official
+Django search-api branch, as well as some other projects, for example
+``djapian``, use a proxy model that mirrors all documents in the index.
+For a example, see:
+
+    http://code.google.com/p/djapian/wiki/IndexingManyModelsAtOnce
+
+We adapt that approach, however, instead of maintaining an additional
+model with it's own rows duplicating all other models, the proxy is
+simply a non-model object that defines the fields of the index, and to
+what fields of each particular models they map.
+
+Defining an index
+-----------------
+
+The first step is to define the index. This primarily entails the fields
+that the index is supposed to have, and the Xappy actions to apply to
+each field:
+
+    import django_xappy as search
+    from django_xappy import action, FieldActions
+
+    class MyIndex(search.Index):
+        location = '/var/search/index'
+
+        class Data:
+            @action(FieldActions.INDEX_FREETEXT)
+            def name():
+                return "index this!"
+
+First, note that we specify the location attribute directly in the class.
+This may seem counter-intuitive at first if you expect that to be
+instance data, but note that your index class is not a template for just
+some index, but, like each model represents a database table, it
+represents an actual physical search index that you intend to maintain.
+
+Now, every method of the inner ``Data`` class that has at least one
+action applied to it is considered a field of the index.
+
+Remember that while an index can store the content of multiple models
+with clashing field names, it's own field names must be unique. For this
+reason, you define fields as methods and return the appropriate value for
+the model instance in ``self.content_object`` (your ``Data`` class is
+the proxy that wraps around the objects to be indexed).
+
+Example:
+
+    @action(FieldActions.INDEX_FREETEXT)
+    @action(FieldActions.STORE_CONTENT)
+    def name(self):
+        if self == Book:
+            return self.content_object.title
+        elif self == auth.User:
+            return self.content_object.username
+
+This field is supposedly part of an index that searches both ``Books``
+and ``Users``. It maps to ``Book.title`` or ``User.username``, depending
+on the type of an object.
+
+Registering the models
+----------------------
+
+Once your index is defined, you must tell it which models it handles.
+Note that a model can be registerd with multiple indexes.
+
+    MyIndex.register(Book)
+    MyIndex.register(auth.User)
+
+This will cause all changes to those model are logged, so make sure it
+runs before you start working with any of the affected models.
+
+Putting it in an app's ``models.py`` file works best. For larger
+projects I usually create a separate ``search`` application with it's
+own ``models.py`` file, and define the index there.
+
+Alternatively, using an application's ``__init__.py`` works as well.
+
+Using the index
+---------------
+
+To connect to your index, simply create an instance:
+
+    index = MyIndex()
+
+.. admonition:: Note
+
+    If you want to open your index at a location other than the default,
+    the following works as well:
+
+        index = MyIndex('/some/other/place')
+
+    Just remember that django-xappy's own code will always open the
+    default location (for example, the update code), so this is really
+    only useful in rare cases.
+
+# XXX more info here
+To search:
+
+    index.search()
+
+To modify the index (note that you will usually don't do this, but use the script):
+
+    index.add()
+
+The Xappy separation between a search and an indexer connection is hidden,
+but you only use one of them at the same time. Using your index instance
+for search when you have already add()ed a new document will raise an
+exception. Close the index .close() or use a separate instance to avoid
+this.
+
+Keeping your index up-to-date:
+------------------------------
+
+Since django-xappy logs all changes to your models instead of applying
+them directly, you need to update your index in regular intervals.
+
+Usually, you would use a cronjob for this. The code for such a script
+is already provided, and you can simply create your own wrapper that is
+part of your project:
+
+    # 1) SETUP DJANGO
+    ...
+
+    # 2) RUN SCRIPT
+    from django_xappy.scripts import update
+    update.main()
+
+Keep in mind that you **have** to do step 1 and setup your project's
+Django environment for this script. For information on how to do this,
+see:
+
+    http://www.b-list.org/weblog/2007/sep/22/standalone-django-scripts/
+
+Also, all modules that define an index need to be loaded, or
+``update.main`` won't know **what** to update.
+
+``examples\scripts\update_index.py`` shows how this might look.
+
+.. admonition Note on using multiple indexes
+
+    Due to the way the model change log is stored (with only one
+    record per change), it is currently not possible to update
+    indexes selectively. There is no way to track which change has
+    already been applied to which index.
+
+
+Advanced usage
+==============
+
+Document ids
+------------
+
+Each document in the search index needs a unique id by which it is
+addressable. By default, a combination of the content type id and the
+object id is used. In the rare case that you may want to override
+this, you can do so by by implementing a ``document_id`` method in your
+data class:
+
+    class Data:
+        def self.document_id():
+            return "%d_%d" % (self.object_id, self.content_type.pk)
+
+However, make sure that the result really is unique. For example, if the
+separating underscore in the above example were missing, this would not
+be true!
+
+.. adminition Imporant!
+
+    Note how in the above example, ``self.object_id`` is used. The
+    familiar alternative, ``self.content_object.id``, would fail when
+    a **delete** change needs to be applied, since the full object
+    won't be available in that case.
+
+Custom update scripts
+---------------------
+
+If you don't like the default update script provided by
+``django_xappy.update.main``: It simply wraps around the lower-level
+functions ``apply_changes`` and ``rebuild``.
+
+Of course, you can manually modify the index as per your liking, using
+``index.update()``, ``index.delete()`` etc.
+
+
+TODO
+====
+    * Simplify usage for simple cases where an index does not
+      spawn multiple models.
+    * Port tests from critify project
+    * Fail if a data class does not define any fields/actions?
+    * Provide some kind of support for "unapproved" items, which would
+      not be included in the index.
+    * Add management commands for updating.
+    * Add a distutils script and register with the cheeseshop.
