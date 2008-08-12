@@ -1,0 +1,17 @@
+Simple Django example project using xappy search.
+
+Before you start, run
+
+    $ ./scripts/update_index.py --full
+
+once to create the intial index.
+
+You can then edit objects using the admin interface and run the script
+again to have your changes applied to the index.
+
+Interesting places to look at:
+
+    * scripts/update_index.py
+    * search/models.py (index definition)
+    * main/views.py (doing the search)
+    * main/templates/results.html (display of the search results)
