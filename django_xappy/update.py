@@ -192,7 +192,7 @@ def main(argv=None):
             assert False, "unhandled option"
 
     if full_rebuild:
-        rebuild()
+        rebuild(clear_changes=True)
     elif update_only:
         apply_changes()
     else:
