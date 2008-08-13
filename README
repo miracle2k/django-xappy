@@ -250,7 +250,6 @@ TODO
     * Provide some kind of support for "unapproved" items, which would
       not be included in the index.
     * Add management commands for updating.
-    * Add a distutils script and register with the cheeseshop.
     * Allow disabling of search result database resolving - when
       outputting the search results, instead of using a resolved model
       instance, one would have to use STORE_CONTENT index fields

@@ -1,2 +1,6 @@
 examples/simple/index
 examples/simple/index*
+
+MANIFEST
+dist
+build
