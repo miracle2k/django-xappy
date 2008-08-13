@@ -123,20 +123,56 @@ To connect to your index, simply create an instance:
     default location (for example, the update code), so this is really
     only useful in rare cases.
 
-# XXX more info here
-To search:
+To search, just do:
 
-    index.search()
+    results = index.search('who am i')
 
-To modify the index (note that you will usually don't do this, but use the script):
+This will give you the first ten results.
 
-    index.add()
+    results = index.search('who am i', page=3, num_per_page=5)
 
-The Xappy separation between a search and an indexer connection is hidden,
-but you only use one of them at the same time. Using your index instance
-for search when you have already add()ed a new document will raise an
-exception. Close the index .close() or use a separate instance to avoid
-this.
+Now, the result set includes 5 documents from page 3.
+
+See the **Advanced Usage** section for more about pagination.
+
+.. admonition:: Note
+
+    You can also modify the index, although you usually don't need to
+    (and shouldn't) do this. Use the provided update scripts instead.
+    For example, to add a document:
+
+        f = Film.objects.get(pk=1)
+        index.add(f)
+        index.flush()
+
+.. admonition:: Note
+
+    The Xappy separation between a search and an indexer connection is
+    hidden by the index class, although if possible you should only use
+    an instance for either modifying or searching.
+
+In templates
+------------
+
+Usually, you would pass the results collection that is returned by
+``search()`` into your template.
+
+There, you can simply iterate over it:
+
+    {% if results %}
+        {% for result in results %}
+            {{ result.content_object }}
+        {% endif %}
+    {% endif %}
+
+``result.content_object`` gives you access to the orignal model
+instance. If you used the STORE_CONTENT action on some of your
+fields, you may instead those values using on of:
+
+    {{ result.some_field }}
+    {{ result.highlighted.some_field }}
+    {{ result.summarised.some_field }}
+
 
 Keeping your index up-to-date:
 ------------------------------
@@ -177,6 +213,23 @@ Also, all modules that define an index need to be loaded, or
 Advanced usage
 ==============
 
+Pagination
+----------
+
+While technically, you have to use pagination (the ``search()`` function
+always returns a paged subset of the results), there currently isn't good
+support for pagination with respect to display, i.e. rendering **next**
+and **previous** links etc.
+
+You can however use an external paginator to do this, like the one that
+Django has builtin:
+
+    from django.core.paginator import Paginator
+    Paginator(results, num_per_page).page(page)
+
+Just make sure that the ``num_per_page`` and ``page`` values are the same
+that you passed into ``search()``.
+
 Custom update scripts
 ---------------------
 
@@ -198,3 +251,11 @@ TODO
       not be included in the index.
     * Add management commands for updating.
     * Add a distutils script and register with the cheeseshop.
+    * Allow disabling of search result database resolving - when
+      outputting the search results, instead of using a resolved model
+      instance, one would have to use STORE_CONTENT index fields
+      instead. On the plus side, performance would likely improve.
+    * Improve the example project with respect to search display (
+      model-specific results, result highlighting, ...)
+    * Better pagination features. There is no reason why one would have
+      to use an external paginator.
