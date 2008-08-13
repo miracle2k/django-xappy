@@ -173,34 +173,25 @@ fields, you may instead those values using on of:
     {{ result.highlighted.some_field }}
     {{ result.summarised.some_field }}
 
-
 Keeping your index up-to-date:
 ------------------------------
 
 Since django-xappy logs all changes to your models instead of applying
 them directly, you need to update your index in regular intervals.
 
-Usually, you would use a cronjob for this. The code for such a script
-is already provided, and you can simply create your own wrapper that is
-part of your project:
+A management command is available to help you with this. Provided you
+have **django-xappy** in your ``INSTALLED_APPS`` list, you can do:
 
-    # 1) SETUP DJANGO
-    ...
+    $ ./manage.py index --update
 
-    # 2) RUN SCRIPT
-    from django_xappy.scripts import update
-    update.main()
+for an incremental update, and
 
-Keep in mind that you **have** to do step 1 and setup your project's
-Django environment for this script. For information on how to do this,
-see:
+    $ ./manage.py index --full-rebuild
 
-    http://www.b-list.org/weblog/2007/sep/22/standalone-django-scripts/
+to rebuild all indexes from scratch.
 
-Also, all modules that define an index need to be loaded, or
-``update.main`` won't know **what** to update.
-
-``examples\simple\scripts\update_index.py`` shows how this might look.
+To apply changes on a regular basis, you normally would just setup a
+cronjob to run ``manage.py index --update -q``.
 
 .. admonition Note on using multiple indexes
 
@@ -233,12 +224,32 @@ that you passed into ``search()``.
 Custom update scripts
 ---------------------
 
-If you don't like the default update script provided by
-``django_xappy.update.main``: It simply wraps around the lower-level
-functions ``apply_changes`` and ``rebuild``.
+If you don't like to use the management command, you can create a
+standalone update script. A default script is provided that you
+can easily wrap around:
 
-Of course, you can manually modify the index as per your liking, using
-``index.update()``, ``index.delete()`` etc.
+    # 1) SETUP DJANGO
+    ...
+
+    # 2) RUN SCRIPT
+    from django_xappy.scripts import update
+    update.main()
+
+Keep in mind that you **have** to do step 1 and setup your project's
+Django environment for this script. For information on how to do this,
+see:
+
+    http://www.b-list.org/weblog/2007/sep/22/standalone-django-scripts/
+
+Also, all modules that define an index need to be loaded, or
+``update.main`` won't know **what** to update.
+
+``examples\simple\scripts\update_index.py`` shows how this might look.
+
+If you want to further customize things: ``update.main`` wraps around
+the lower-level functions ``apply_changes`` and ``rebuild``, which you
+can call directly. Of course, you can also manually modify the index as
+per your liking, using ``index.update()``, ``index.delete()`` etc.
 
 
 TODO
@@ -249,7 +260,7 @@ TODO
     * Fail if a data class does not define any fields/actions?
     * Provide some kind of support for "unapproved" items, which would
       not be included in the index.
-    * Add management commands for updating.
+    * Add a "search" management command for some simple index testing.
     * Allow disabling of search result database resolving - when
       outputting the search results, instead of using a resolved model
       instance, one would have to use STORE_CONTENT index fields
