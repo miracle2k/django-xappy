@@ -480,6 +480,7 @@ class XapianResults(object):
         ``SearchResult`` object.
 
         # TODO: get all content_object of same type instances at once
+        # TODO: cache the XapianResult instances?
         """
 
         if isinstance(index, xappy.searchconnection.SearchResult):
