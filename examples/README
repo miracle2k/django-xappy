@@ -14,4 +14,4 @@ Interesting places to look at:
     * scripts/update_index.py
     * search/models.py (index definition)
     * main/views.py (doing the search)
-    * main/templates/results.html (display of the search results)
+    * main/templates/search.html (display of the search results)

@@ -42,9 +42,7 @@ class Index(django_xappy.Index):
 
         # A choice's vote count.
         @action(FieldActions.SORTABLE, type="float")
-        @action(FieldActions.FACET, type="float")
-        @action(FieldActions.INDEX_EXACT)
-        @action(FieldActions.WEIGHT)
+        #@action(FieldActions.INDEX_EXACT)
         def votes(self):
             if self == Choice:
                 return self.content_object.votes

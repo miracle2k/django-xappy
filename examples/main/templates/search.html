@@ -1,0 +1,38 @@
+<html>
+<body>
+    <p>
+        <a href="/admin">Edit objects in the admin (Login: <em>test</em>/<em>test</em>)</a>
+    </p>
+
+    <p>
+    Example searches:
+        <a href="?q=djang">djang</a> &bull;
+        <a href="?q=jango+OR+(presiden+AND+first)">jango OR (presiden AND first)</a> &bull;
+        <a href="?q=choice%3Ayes+OR+choice%3Ano+OR+amandmen">choice:yes OR choice:no OR amandmen</a>
+    </p>
+
+    <h1>Search</h1>
+    <p>
+        <form method="GET" action="">
+            <input size="50" name="q" value="{{ query|default:"" }}">
+            <input type="submit" value="Search">
+        </form>
+    </p>
+
+    <p>
+        <strong>{{ results.count }} results</strong>
+    </p>
+
+    {% if results.spell_suggestion_html %}
+        Did you mean: <a href="?q={{ results.spell_suggestion }}">
+            {{ results.spell_suggestion_html }}</a> ?
+    {% endif %}
+
+    {% if results %}
+        {% for result in results %}
+            <p style="border: 1px solid black; padding: 10px;">{{ result.content_object }}</p>
+        {% endfor %}
+    {% endif %}
+
+</body>
+</html>
