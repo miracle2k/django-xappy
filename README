@@ -23,6 +23,11 @@ the app is currently written against revision 252.
 Usage
 =====
 
+.. admonition:: Note
+
+    Don't forget to familarize yourself with Xappy first:
+    http://code.google.com/p/xappy/source/browse/trunk/docs/
+
 django-xappy was originally designed for a project with an index
 spanning multiple models. As such, keep in mind that if you're use case
 is simpler, usage may currently not be as straightforward and easy as
@@ -269,3 +274,4 @@ TODO
       model-specific results, result highlighting, ...)
     * Better pagination features. There is no reason why one would have
       to use an external paginator.
+    * Support accent normalization (see src/djapian/backend/text.py)
