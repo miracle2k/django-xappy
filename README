@@ -200,7 +200,7 @@ see:
 Also, all modules that define an index need to be loaded, or
 ``update.main`` won't know **what** to update.
 
-``examples\scripts\update_index.py`` shows how this might look.
+``examples\simple\scripts\update_index.py`` shows how this might look.
 
 .. admonition Note on using multiple indexes
 

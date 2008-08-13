@@ -12,7 +12,7 @@ TEMPLATE_LOADERS = (
 )
 
 
-ROOT_URLCONF = 'urls'
+ROOT_URLCONF = 'simple.urls'
 
 INSTALLED_APPS = (
     'django.contrib.auth',
