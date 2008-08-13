@@ -177,30 +177,6 @@ Also, all modules that define an index need to be loaded, or
 Advanced usage
 ==============
 
-Document ids
-------------
-
-Each document in the search index needs a unique id by which it is
-addressable. By default, a combination of the content type id and the
-object id is used. In the rare case that you may want to override
-this, you can do so by by implementing a ``document_id`` method in your
-data class:
-
-    class Data:
-        def self.document_id():
-            return "%d_%d" % (self.object_id, self.content_type.pk)
-
-However, make sure that the result really is unique. For example, if the
-separating underscore in the above example were missing, this would not
-be true!
-
-.. adminition Imporant!
-
-    Note how in the above example, ``self.object_id`` is used. The
-    familiar alternative, ``self.content_object.id``, would fail when
-    a **delete** change needs to be applied, since the full object
-    won't be available in that case.
-
 Custom update scripts
 ---------------------
 
