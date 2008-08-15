@@ -270,6 +270,16 @@ can call directly. Of course, you can also manually modify the index as
 per your liking, using ``index.update()``, ``index.delete()`` etc.
 
 
+Incompatible Changes
+====================
+
+After 0.1
+---------
+
+Revision 19: 
+	``order_by`` parameter to ``search()`` no longer exists, use the
+	Xappy original ``sortby``.
+
 TODO
 ====
     * Simplify usage for simple cases where an index does not

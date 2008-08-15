@@ -375,8 +375,7 @@ class Index(object):
 
     ## Searching
 
-    def search(self, query, page=1, num_per_page=10, order_by=None,
-               adjust_page=False, **kwargs):
+    def search(self, query, page=1, num_per_page=10, adjust_page=False, **kwargs):
         """Do a search for ``query``.
 
         ``query`` is a Google-syntax like search string, as supported
@@ -400,9 +399,6 @@ class Index(object):
         ``adjust_page`` argument to True, the result will a 2-tuple
         **(results, fixed_page_num)**.
 
-        Pass ``False`` to ``order_by``, if you want the default sort
-        order by relevance. Otherwise, pass the field name.
-
         All other **kwargs will be passed on the Xappy's ``search``
         method. For example, you may use it to enable the
         ``getfacets`` option.
@@ -419,7 +415,7 @@ class Index(object):
 
         q = conn.query_parse(query_utf8)
         _search = lambda s:\
-            conn.search(q, s, s+count, sortby=order_by, **kwargs)
+            conn.search(q, s, s+count, **kwargs)
 
         # first, attempt a normal search
         results = _search(start)
