@@ -298,16 +298,24 @@ class Index(object):
                 # apparently not available for this object/model
                 continue
 
-            # we need an utf8-encoded string for xapian
-            if isinstance(value, unicode):
-                value = value.encode('utf8')
-            if isinstance(value, str):
-                # existing strings are simply assumed to be utf8
-                pass
-            elif isinstance(value, (int, long)):
-                value = u"%d" % value
+            # PERF: this if + the following loop: +2% for 23000 doc,
+            # 143 mb index where not needed.
+            if isinstance(value, types.GeneratorType):
+                iter_over = value
+            else:
+                iter_over = (value,)
 
-            document.fields.append(xappy.Field(field, value))
+            for value in iter_over:
+                # we need an utf8-encoded string for xapian
+                if isinstance(value, unicode):
+                    value = value.encode('utf8')
+                if isinstance(value, str):
+                    # existing strings are simply assumed to be utf8
+                    pass
+                elif isinstance(value, (int, long)):
+                    value = u"%d" % value
+
+                document.fields.append(xappy.Field(field, value))
 
         return document
 
