@@ -553,15 +553,6 @@ class XapianResults(object):
         return not self._results.estimate_is_exact
 
     @property
-    def xappy_results(self):
-        """Return the lower-level Xappy result object.
-
-        For access to advanced features.
-        """
-        return self._results
-
-
-    @property
     def spell_suggestion(self):
         """Ask xappy for spelling suggestions on the query used.
 
@@ -592,6 +583,20 @@ class XapianResults(object):
                 with_changed.append(fstr % word2)
             return mark_safe(' '.join(with_changed))
         return None
+
+    @property
+    def xappy_results(self):
+        """Return the lower-level Xappy result object.
+
+        For access to advanced features.
+        """
+        return self._results
+
+    def get_top_tags(self, *args, **kwargs):
+        return self._results.get_top_tags(*args, **kwargs)
+
+    def get_suggested_facets(self, *args, **kwargs):
+        return self._results.get_suggested_facets(*args, **kwargs)
 
 
 class XapianResult(object):
