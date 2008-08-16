@@ -11,12 +11,15 @@ from models import log_model
 from utils import template_callable
 
 
-__all__ = ('action', 'Index', 'FieldActions')
+__all__ = ('action', 'Index', 'FieldActions', 'OP_AND', 'OP_OR')
 
 
 # make available here so user's don't have to import from xappy
+# TODO: should probably be moved to __init__
 from xappy import FieldActions
-
+from xappy import Query
+OP_AND = Query.OP_AND
+OP_OR = Query.OP_OR
 
 def action(fieldtype, **kwargs):
     """Define a field action for the decorated data field of the index.
@@ -257,6 +260,37 @@ class Index(object):
                     self._indexer.add_field_action(
                         field, action[0], **action[1])
 
+    # Make SearchConnection features available on this class.
+    #
+    # __getattr__ would we simplier (just a list of names), but no
+    # dir(); a metaclass could combine both.
+    def __defer(f):
+        def m(self, *args, **kwargs):
+            self._connect_searcher()
+            return getattr(self._searcher, f)(*args, **kwargs)
+        m.__name__ = f
+        m.__doc__ = 'Wraps xappy.searchconnection.SearchConnection.%s' % f
+        # alternative: types.FunctionType(m.func_code, m.func_globals, name=f)
+        # would also allow keeping of __doc__ etc.
+        return m
+    query_range = __defer('query_range')
+    query_facet = __defer('query_facet')
+    query_filter = __defer('query_filter')
+    query_adjust = __defer('query_adjust')
+    query_parse = __defer('query_parse')
+    query_field = __defer('query_field')
+    query_similar = __defer('query_similar')
+    query_all = __defer('query_all')
+    query_none = __defer('query_none')
+    facet_query_never = __defer('facet_query_never')
+    spell_correct = __defer('spell_correct')
+    can_collapse_on = __defer('can_collapse_on')
+    can_sort_on = __defer('can_sort_on')
+    get_max_possible_weight = __defer('get_max_possible_weight')
+    iterids = __defer('iterids')
+    iter_synonyms = __defer('iter_synonyms')
+    significant_terms = __defer('significant_terms')
+
 
     ## Common
 
@@ -319,7 +353,6 @@ class Index(object):
 
         return document
 
-
     def add(self, instance):
         """Add a document to the index.
 
@@ -327,7 +360,6 @@ class Index(object):
         instances) already have an ID in every case.
         """
         return self.update(instance)
-
 
     def update(self, instances):
         """Update one or multiple documents in the index.
@@ -340,7 +372,6 @@ class Index(object):
         self._connect_indexer()
         for instance in instances:
             return self._indexer.replace(self._document_for_instance(instance))
-
 
     def delete(self, what, model=None, content_type=None):
         """Delete a document from the index.
@@ -367,7 +398,6 @@ class Index(object):
         self._connect_indexer()
         self._indexer.delete(doc.document_id())
 
-
     def flush(self):
         if self._indexer:
             self._indexer.flush()
@@ -375,11 +405,17 @@ class Index(object):
 
     ## Searching
 
-    def search(self, query, page=1, num_per_page=10, adjust_page=False, **kwargs):
+    def search(self, query, page=1, num_per_page=10, adjust_page=False,
+               query_str=None, **kwargs):
         """Do a search for ``query``.
 
         ``query`` is a Google-syntax like search string, as supported
-        by Xappy.
+        by Xappy's ``query_parse``. Or, it can be a query object, as
+        compiled by the ``query_*`` methods. In the latter case, you
+        will need to provide the ``query_str`` argument with the raw
+        string the user searched for - otherwise, the spell checking
+        will not be available on the results object. Of course, you
+        may still call ``spell_correct()`` manually.
 
         Instead of specifying a start- and end-index, you pass the
         ``page`` (1-based), and the number of items per page
@@ -400,24 +436,24 @@ class Index(object):
         **(results, fixed_page_num)**.
 
         All other **kwargs will be passed on the Xappy's ``search``
-        method. For example, you may use it to enable the
-        ``getfacets`` option.
+        method. For example, you may use it to enable the ``getfacets``
+        option.
         """
 
         self._connect_searcher()
-        conn = self._searcher
 
         start = (page-1)*num_per_page
         count = num_per_page
-        query_utf8 = query.encode('utf-8')
 
-        ts_begin = time.time()
+        if not isinstance(query, xappy.Query):
+            query_str = query
+            query = self._searcher.query_parse(query.encode('utf-8'))
 
-        q = conn.query_parse(query_utf8)
         _search = lambda s:\
-            conn.search(q, s, s+count, **kwargs)
+            self._searcher.search(query, s, s+count, **kwargs)
 
         # first, attempt a normal search
+        ts_begin = time.time()
         results = _search(start)
 
         # Check for the case that a non-existant page number was
@@ -438,7 +474,7 @@ class Index(object):
         results = XapianResults(
                     results,
                     offset=start,
-                    query=query,
+                    query=query_str,
                     search_time=search_time)
 
         if adjust_page:
@@ -558,6 +594,10 @@ class XapianResults(object):
 
         See also ``spell_suggestion_html``.
         """
+        if not self.query:
+            raise ValueError('Query string not available. You need to pass '
+                '"query_str" to search()')
+
         if not hasattr(self, '_spell_suggestion'):
             query_utf8 = self.query.encode('utf8')
             suggested_query = self._results._conn.spell_correct(query_utf8)

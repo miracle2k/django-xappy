@@ -209,6 +209,36 @@ cronjob to run ``manage.py index --update -q``.
 Advanced usage
 ==============
 
+Complex search queries
+----------------------
+
+So far, we always passed a query string to ``Index.search()``, which was 
+then internally resolving using Xappy's ``query_parse()``. If you need 
+more  control, you can manually build a Query object and give that to 
+the search method. All of Xappy's query builders are exposed by the 
+index.
+
+For example, say you want to restrict the user's search to results from
+a certain category:
+
+	q = index.query_parse(request.GET.get('q'))
+	q = index.query_filter(
+			index.query_field('category', request.GET.get('cat'))
+	)
+	
+	results = index.search(q, query_str=request.GET.get('q'))
+	
+Note that ``query_filter`` differs from an AND-``query_composite`` in 
+that only the first part of the query is used for ranking purposes. See 
+the Xappy docs for more information.
+
+Further note that in addition to the Query object we built we also pass
+the ``query_str`` parameter to ``search()``. This is required so that
+the query can be spell checked and a corrected version made available.
+If you don't pass ``query_str``, the spell checked version will not be
+available on the ``results`` object (although you are free to call
+``index.spell_correct`` manually).
+
 Pagination
 ----------
 
