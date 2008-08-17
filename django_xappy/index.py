@@ -526,6 +526,10 @@ class XapianResults(object):
         if isinstance(index, xappy.searchconnection.SearchResult):
             result = index
         else:
+            # TODO: DatabaseModifiedError error may occur here. can we
+            # handle it, and is it worth it (since this xapian limitation
+            # may go away)? See also the "Concurrent update limitations"
+            # section in introduction.rst of the xappy docs.
             result = self._results.get_hit(index)
 
         object_id, content_type_id = result.id.split('-')
