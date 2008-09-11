@@ -212,10 +212,10 @@ Advanced usage
 Complex search queries
 ----------------------
 
-So far, we always passed a query string to ``Index.search()``, which was 
-then internally resolving using Xappy's ``query_parse()``. If you need 
-more  control, you can manually build a Query object and give that to 
-the search method. All of Xappy's query builders are exposed by the 
+So far, we always passed a query string to ``Index.search()``, which was
+then internally resolving using Xappy's ``query_parse()``. If you need
+more  control, you can manually build a Query object and give that to
+the search method. All of Xappy's query builders are exposed by the
 index.
 
 For example, say you want to restrict the user's search to results from
@@ -225,11 +225,11 @@ a certain category:
 	q = index.query_filter(
 			index.query_field('category', request.GET.get('cat'))
 	)
-	
+
 	results = index.search(q, query_str=request.GET.get('q'))
-	
-Note that ``query_filter`` differs from an AND-``query_composite`` in 
-that only the first part of the query is used for ranking purposes. See 
+
+Note that ``query_filter`` differs from an AND-``query_composite`` in
+that only the first part of the query is used for ranking purposes. See
 the Xappy docs for more information.
 
 Further note that in addition to the Query object we built we also pass
@@ -259,7 +259,7 @@ that you passed into ``search()``.
 Multiple field values
 ---------------------
 
-Sometimes, you may want to add a field multiple times to the index, for 
+Sometimes, you may want to add a field multiple times to the index, for
 example, if you are using the TAG action. To do this, simply make your
 data function a generator:
 
@@ -306,7 +306,7 @@ Incompatible Changes
 After 0.1
 ---------
 
-Revision 19: 
+Revision 19:
 	``order_by`` parameter to ``search()`` no longer exists, use the
 	Xappy original ``sortby``.
 
@@ -314,7 +314,8 @@ TODO
 ====
     * Simplify usage for simple cases where an index does not
       spawn multiple models.
-    * Port tests from critify project
+    * Port tests from critify project, pay particular attention to
+      model inheritance issues.
     * Fail if a data class does not define any fields/actions?
     * Provide some kind of support for "unapproved" items, which would
       not be included in the index.
