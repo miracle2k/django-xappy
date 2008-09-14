@@ -299,6 +299,32 @@ the lower-level functions ``apply_changes`` and ``rebuild``, which you
 can call directly. Of course, you can also manually modify the index as
 per your liking, using ``index.update()``, ``index.delete()`` etc.
 
+OpenSearch
+----------
+
+Limited functionality to work with OpenSearch is included.
+
+For more information about OpenSearch, see:
+
+    http://www.opensearch.org/
+    http://www.opensearch.org/Specifications/OpenSearch/1.1
+
+In ``django_xappy.feeds`` you will find a subclass of Django's own
+``syndication.Feed`` that can be used to output a feed for your search
+results, while adding the OpenSearch response metadata. You basically
+use it like the default ``Feed`` class, defining what data to include
+in titles, descriptions etc., with the following specialties:
+
+    * No need to define ``items`` - this will use the list of search
+      result automatically.
+
+    * Instead, you need to define ``results``, pointing it to a
+      django-xappy search results objects.
+
+    * Optionally, you may set ``spell_suggestion`` to False if you do
+      not want to include a spelling correction in the metadata, even
+      if would be available.
+
 
 Incompatible Changes
 ====================

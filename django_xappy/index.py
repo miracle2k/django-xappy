@@ -474,6 +474,7 @@ class Index(object):
         results = XapianResults(
                     results,
                     offset=start,
+                    num_per_page=num_per_page,
                     query=query_str,
                     search_time=search_time)
 
@@ -489,7 +490,7 @@ class XapianResults(object):
     also wrapping each result in a ``XapianResult`` class.
     """
 
-    def __init__(self, results, offset, query, search_time=None):
+    def __init__(self, results, offset, num_per_page, query, search_time=None):
         """
         The number in ``offset`` specifies the first index of the
         search results, 0-based (e.g. for results 31-40, offset
@@ -497,6 +498,7 @@ class XapianResults(object):
         """
         self._results = results
         self.offset = offset
+        self.num_per_page = num_per_page
         self.query = query
         self.search_time = search_time
 
