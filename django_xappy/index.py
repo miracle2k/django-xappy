@@ -513,9 +513,9 @@ class XapianResults(object):
         Also, this is the place were we handle sync issues between the
         database and the search index - an object might already be
         deleted from the database while the index has not yet been
-        updated. Our current solution is just to ignore and skip the
-        result, so a result page might end up not actually containing
-        less items than it's supposed to.
+        updated. Our current solution is just to ignore that and return
+        ``False``, so the caller may simply skip the result, and display
+        a result page actually containing less items than advertised.
 
         ``index`` is normally the 0-based index to be used with
         ``get_hit``, but can also be an already retrieved
