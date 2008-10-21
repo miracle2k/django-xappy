@@ -93,7 +93,7 @@ def _what_needs_to_be_logged(instance):
     """Checks if ``instance`` should be logged, e.g. if it's model is
     registered.
 
-    This is more complicated than maybe expecte due to model
+    This is more complicated than maybe expected due to model
     inheritance. First, if a base model class A is registered, and an
     instance of the subclass B of that model is changed, we **do**
     want to log that change, i.e. we would use ``isinstance()``.
