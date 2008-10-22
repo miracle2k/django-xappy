@@ -114,33 +114,42 @@ def apply_changes():
                 Change.Kind.update: 'updated',
                 Change.Kind.delete: 'deleted',
             }
-            log.debug('\t#%d of type "%s" was %s' % (
-                change.object_id, change.content_type, _chstr[change.kind]))
 
-            if change.kind == Change.Kind.delete:
-                for index in indexes:
+            # apply this change to all indexes it is relevant to
+            count_affected = 0
+            for index in indexes:
+                if not change.content_type.model_class() in index.get_models():
+                    continue
+                else:
+                    count_affected += 1
+
+                if change.kind == Change.Kind.delete:
                     # note it is possible that the object doesn't even
                     # exist, if it was deleted after being created, before
                     # we even did the first update.
                     index.delete(change.object_id,
                                  content_type=change.content_type)
 
-            elif change.kind in (Change.Kind.add, Change.Kind.update):
-                try:
-                    for index in indexes:
+                elif change.kind in (Change.Kind.add, Change.Kind.update):
+                    try:
                         index.update(change.content_object)
-                except change.model.DoesNotExist:
-                    # Handle db objects gracefully. The reason this
-                    # should not happen is that a "delete" action
-                    # should normally be logged as well and is handled
-                    # separately.
-                    log.warning('\tSkipping %s #%d - the database record '
-                        'associated with this change does no longer '
-                        'exist. This should normally not happen.',
-                            change.content_type, change.object_id)
+                    except change.model.DoesNotExist:
+                        # Handle db objects gracefully. The reason this
+                        # should not happen is that a "delete" action
+                        # should normally be logged as well and is handled
+                        # separately.
+                        log.warning('\tSkipping %s #%d - the database record '
+                            'associated with this change does no longer '
+                            'exist. This should normally not happen.',
+                                change.content_type, change.object_id)
+                        continue  # iterations for other indexes will fail too
 
-            else:
-                assert False, "unknown change kind"
+                else:
+                    assert False, "unknown change kind"
+
+            log.debug('\t#%d of type "%s" was %s to %s index%s' % (
+                change.object_id, change.content_type, _chstr[change.kind],
+                count_affected, 'es' if count_affected != 1 else ''))
 
             # this change is now handled
             change.delete()
