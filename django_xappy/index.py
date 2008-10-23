@@ -1,4 +1,4 @@
-import time
+﻿import time
 import types
 
 from django.db import models
@@ -47,6 +47,32 @@ def action(fieldtype, **kwargs):
         func._actions.append(tuple((fieldtype, kwargs,)))
         return func
     return decorator
+
+
+def unicodify(what):
+    """Helper that allows us to easily expose xappy with a Unicode
+    interface.
+
+    Data returned from Xappy are usually utf8-bytestrings, which can be
+    then hard to reuse with code that expects unicode or implicitly
+    tries to convert from ascii.
+
+    The function tries to convert not only strings, but much of what
+    you through at it, including dicts, lists and nested structures.
+    """
+    if isinstance(what, unicode):
+        return what
+    elif isinstance(what, str):
+        return what.decode('utf8')
+    elif isinstance(what, dict):
+        raise NotImplementedError()
+    elif isinstance(what, (list, tuple)):
+        result = [unicodify(x) for x in what]
+        if isinstance(what, tuple):
+            return tuple(result)
+        return result
+    else:
+        return what   # return unmodified (e.g. ints, custom types)
 
 
 class IndexDataBase(object):
@@ -708,10 +734,10 @@ class XapianResults(object):
         return self._results
 
     def get_top_tags(self, *args, **kwargs):
-        return self._results.get_top_tags(*args, **kwargs)
+        return unicodify(self._results.get_top_tags(*args, **kwargs))
 
     def get_suggested_facets(self, *args, **kwargs):
-        return self._results.get_suggested_facets(*args, **kwargs)
+        return unicodify(self._results.get_suggested_facets(*args, **kwargs))
 
 
 class XapianResult(object):
@@ -729,17 +755,17 @@ class XapianResult(object):
             return getattr(self._result, name)
         except AttributeError:
             try:
-                return self._result.data[name][0]
+                return unicodify(self._result.data[name][0])
             except KeyError:
                 return ''
 
     @template_callable
     def highlighted(self, field):
-        return mark_safe(self._result.highlight(field)[0])
+        return mark_safe(unicodify(self._result.highlight(field)[0]))
 
     @template_callable
     def summarised(self, field):
-        return mark_safe(self._result.summarise(field, maxlen=180))
+        return mark_safe(unicodify(self._result.summarise(field, maxlen=180)))
 
     @property
     def model(self):
