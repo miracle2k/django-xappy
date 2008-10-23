@@ -759,13 +759,19 @@ class XapianResult(object):
             except KeyError:
                 return ''
 
-    @template_callable
-    def highlighted(self, field):
+    def highlight(self, field):
         return mark_safe(unicodify(self._result.highlight(field)[0]))
 
+    def summarise(self, field, maxlen=180):
+        return mark_safe(unicodify(self._result.summarise(field, maxlen=maxlen)))
+
+    # expose the above in Django templates
+    @template_callable
+    def highlighted(self, field):
+        return self.highlight(field)
     @template_callable
     def summarised(self, field):
-        return mark_safe(unicodify(self._result.summarise(field, maxlen=180)))
+        return self.summarise(field)
 
     @property
     def model(self):
