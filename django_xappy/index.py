@@ -2,12 +2,14 @@ import time
 import types
 
 from django.db import models
+from django.db.models import Model
+from django.db.models.query import QuerySet
 from django.utils.safestring import mark_safe
 from django.contrib.contenttypes.models import ContentType
 import xappy
 import xappy.searchconnection
 
-from models import log_model
+from models import log_model, Change
 from utils import template_callable
 
 
@@ -207,22 +209,89 @@ class Index(object):
 
     ## Class-usage
 
-    _models = []   # list of models registered with this index
+    _models = {}   # models registered with this index (model -> queryset)
 
     @classmethod
-    def register(cls, model):
+    def register(cls, model_or_queryset):
         """Register a model with this index.
 
         Changes to this model will then be logged in the database, and
         applied to the index during the update process.
+
+        You may also specify a queryset instead of a model if you want
+        to restrict the index to objects that match the query. Note that
+        you can only register one queryset per model. If a model is
+        already registered, with or without a queryset restriction, the
+        entry will be overridden.
         """
-        if not model in cls._models:
-            cls._models.append(model)
+        assert (isinstance(model_or_queryset, type) and
+                    issubclass(model_or_queryset, Model)) or \
+               isinstance(model_or_queryset, (Model, QuerySet))
+
+        if isinstance(model_or_queryset, QuerySet):
+            model = model_or_queryset.model
+            queryset = model_or_queryset
+        else:
+            model = model_or_queryset
+            queryset = None
+
+        cls._models[model] = queryset
+        # TODO: currently, *all* changes to all registered models are
+        # logged, regardless if the change actually matches any of
+        # the queryset restrictions the models were registered with.
+        # Whether a change is applied or not is instead determined
+        # during index updating. In essence, this means that we trade
+        # performance during indexing and database storage for better
+        # performance while the application is running.
         log_model(model)
 
     @classmethod
-    def get_models(cls):
-        return cls._models
+    def get_models(cls, with_querysets=False):
+        if not with_querysets:
+            return cls._models.keys()
+        else:
+            result = []
+            for model, queryset in cls._models.items():
+                result.append((model, queryset
+                                        if queryset else model.objects.all()))
+            return result
+
+    @classmethod
+    def is_reponsible(cls, change):
+        """Determine whether the given ``change`` needs to be applied
+        to this index, and if so, returns ``True`, otherwise ``False``.
+
+        The outcome of this tests depends primarily on what models are
+        registered with the index, as well as the queryset restriction
+        that they were registerd with.
+        """
+        model = change.content_type.model_class()
+        try:
+            queryset = cls._models[model]
+        except KeyError:
+            # model is not registered with this index at all
+            return False
+        else:
+            if not queryset:
+                # model registration is not restricted by a queryset
+                return True
+
+            # we cannot check whether an object that no longer exists
+            # is part of the queryset restriction - luckely, simply
+            # applying a deletion change to every index regardless
+            # doesn't hurt; if the deleted object doesn't exist in an
+            # index, we can just silently skip that, no harm done.
+            if change.kind == Change.Kind.delete:
+                return True
+
+            # otherwise check if the changed object is part of the given
+            # queryset or not, and return True/False respectively.
+            try:
+                queryset.get(pk=change.object_id)
+            except model.DoesNotExist:
+                return False
+            else:
+                return True
 
 
     ## Instance-usage

@@ -178,8 +178,8 @@ fields, you may instead those values using on of:
     {{ result.highlighted.some_field }}
     {{ result.summarised.some_field }}
 
-Keeping your index up-to-date:
-------------------------------
+Keeping your index up-to-date
+-----------------------------
 
 Since django-xappy logs all changes to your models instead of applying
 them directly, you need to update your index in regular intervals.
@@ -269,6 +269,22 @@ data function a generator:
 			for tag in self.content_object.tags:
 				yield tag.name
 
+Partial model registration
+--------------------------
+
+Rather than registering a full model, you can also just pass a queryset
+to ``register``:
+
+    MyIndex.register(Book.objects.all(is_public=True))
+
+This will ensure that only ``Book`` objects that match the given query
+will end up in the index. As you can see in the example, this can be
+useful e.g. for excluding private objects from the index. Note however,
+that while updating the public status of an existing object to True will
+make the object appear in the index due to "add" and "update" being
+synonymous, switching an existing object to be private would not delete
+it from the index. This may improve in the future (see also TODO section).
+
 Custom update scripts
 ---------------------
 
@@ -343,8 +359,6 @@ TODO
     * Port tests from critify project, pay particular attention to
       model inheritance issues.
     * Fail if a data class does not define any fields/actions?
-    * Provide some kind of support for "unapproved" items, which would
-      not be included in the index.
     * Add a "search" management command for some simple index testing.
     * Allow disabling of search result database resolving - when
       outputting the search results, instead of using a resolved model
@@ -355,3 +369,13 @@ TODO
     * Better pagination features. There is no reason why one would have
       to use an external paginator.
     * Support accent normalization (see src/djapian/backend/text.py)
+    * When not using a queryset restriction, then during index rebuild,
+      model.objects.all() will be used, which may be a custom manager
+      with a restrictive default query, while a partial update essentially
+      truly handles **all** objects. Both cases should behave the same.
+    * If an object is updated, and the update removes it from the queryset
+      it's model used to register with the index, the object will not be
+      removed from the index; this **could** be done automatically though
+      by checking with the queryset during the save-signal handler and
+      logging a "delete" change. It would also cost performance though, so
+      maybe this should be optional behaviour.

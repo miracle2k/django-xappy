@@ -54,10 +54,10 @@ def rebuild(indexes=None, clear_changes=False):
         try:
             log.info('Creating a new index in "%s"...' % \
                 os.path.basename(temp_index.location))
-            for model in temp_index.get_models():
+            for model, queryset in temp_index.get_models(True):
                 log.info('Indexing %d objects of type "%s"...' % \
-                    (model.objects.count(), model.__name__))
-                for obj in model.objects.all():
+                    (queryset.count(), model.__name__))
+                for obj in queryset.all():
                     log.debug('\t#%d: %s' % (obj.pk, str(obj)))
                     temp_index.add(obj)
         finally:
@@ -118,7 +118,7 @@ def apply_changes():
             # apply this change to all indexes it is relevant to
             count_affected = 0
             for index in indexes:
-                if not change.content_type.model_class() in index.get_models():
+                if not index.is_reponsible(change):
                     continue
                 else:
                     count_affected += 1
