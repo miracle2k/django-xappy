@@ -43,8 +43,10 @@ def action(fieldtype, **kwargs):
 
     def decorator(func):
         if not hasattr(func, '_actions'):
-            func._actions = []
-        func._actions.append(tuple((fieldtype, kwargs,)))
+            func._actions = {}
+        if fieldtype in func._actions:
+            raise xappy.IndexerError('Can only apply one action per type')
+        func._actions[fieldtype]= kwargs
         return func
     return decorator
 
@@ -90,9 +92,9 @@ class IndexDataBase(object):
         """
         for name in dir(cls):
             obj = getattr(cls, name)
-            # only methods with at least one actions are considered fields
+            # only methods with at least one action are considered fields
             if isinstance(obj, types.MethodType):
-                if len(getattr(obj.im_func, '_actions', [])) > 0:
+                if len(getattr(obj.im_func, '_actions', {})) > 0:
                     yield name
 
     @classmethod
@@ -102,7 +104,7 @@ class IndexDataBase(object):
         """
         for name in cls.get_fields():
             obj = getattr(cls, name)
-            for action  in getattr(obj.im_func, '_actions'):
+            for action in getattr(obj.im_func, '_actions').items():
                 yield name, action
 
     def __init__(self, content_object=None, content_type=None, object_id=None):
@@ -341,19 +343,26 @@ class Index(object):
             self._indexer = xappy.IndexerConnection(self.location)
 
             # First time the index is created, register fields and their
-            # actions; The index is assumed to have been creating if
+            # actions; The index is assumed to have been created if
             # there are no current field actions.
             if not self._indexer.get_fields_with_actions():
                 for field, action in self.Data.get_fieldactions():
                     # normalize the action object, can be given in
                     # different ways depending on what data is needed
                     if not isinstance(action, tuple):
-                        action = (action, {},)
+                        fieldtype, kwargs = action, {}
                     elif len(action) == 1:
-                        action = (action[0], {})
+                        fieldtype, kwargs = action[0], {}
+                    else:
+                        fieldtype, kwargs = action
+
+                    # remove django-xappy specific arguments
+                    kwargs = kwargs.copy()
+                    if fieldtype == FieldActions.INDEX_EXACT:
+                        kwargs.pop('truncate', None)
 
                     self._indexer.add_field_action(
-                        field, action[0], **action[1])
+                        field, fieldtype, **kwargs)
 
     # Make SearchConnection features available on this class.
     #
@@ -422,13 +431,14 @@ class Index(object):
         document.id = data.document_id()
 
         for field in data.get_fields():
-            value = getattr(data, field)()
+            obj = getattr(data, field)
+            value = obj()
             if value is None:
                 # apparently not available for this object/model
                 continue
 
-            # PERF: this if + the following loop: +2% for 23000 doc,
-            # 143 mb index where not needed.
+            # PERF: this + the following loop:
+            # +2% for 23000 doc, 143 mb index.
             if isinstance(value, types.GeneratorType):
                 iter_over = value
             else:
@@ -443,6 +453,32 @@ class Index(object):
                     pass
                 elif isinstance(value, (int, long)):
                     value = u"%d" % value
+
+                # Xappy currently has a length restriction for INDEX_EXACT
+                # fields (max. 220 characters), due to term-length limits
+                # in Xapian itself. Since often, the data an index operates
+                # on can be pretty random, we try per default, as a
+                # convenience, to truncate overlong INDEX_EXACT strings.
+                # This can be disabled by passing the special argument
+                # ``truncate=False`` to the INDEX_EXACT action.
+                actions = getattr(obj, '_actions')
+                if isinstance(value, str) \
+                        and actions.get(FieldActions.INDEX_EXACT, {}).\
+                                    get('truncate', True):
+                    # HACK!
+                    # The prefix Xappy uses is part of the term and takes
+                    # up some of the characters we can use, but depending
+                    # on the number of actions/fields defined (?), it's
+                    # length varies.
+                    # This code is basically copied from
+                    # ``xappy/datastructures.py:add_term`` and will tell
+                    # tell us the prefix length for this field.
+                    prefix = len(self._indexer._field_mappings.get_prefix(field))
+                    if len(value) > 0:
+                        if ord(value[0]) >= ord('A') and ord(value[0]) <= ord('Z'):
+                            prefix += 1  # ':'
+
+                    value = value[:220-prefix]
 
                 document.fields.append(xappy.Field(field, value))
 
