@@ -453,6 +453,8 @@ class Index(object):
                     pass
                 elif isinstance(value, (int, long)):
                     value = u"%d" % value
+                elif isinstance(value, type(None)):
+                    value = u""
 
                 # Xappy currently has a length restriction for INDEX_EXACT
                 # fields (max. 220 characters), due to term-length limits
