@@ -18,10 +18,6 @@ class Command(BaseCommand):
                  'This brings the index up-to-date with the changes '
                  'flagged in the database.'),
 
-        make_option('-v', '--verbose', action='store_true',
-            dest='verbose', default=False,
-            help='be extra verbose'),
-
         make_option('-q', '--quiet', action='store_true',
             dest='quiet', default=False,
             help='be extra quiet'),
@@ -29,9 +25,10 @@ class Command(BaseCommand):
     help = "Update the search index."
 
     def handle(self, *args, **options):
-        if options.get('verbose'):
+        verbosity = int(options.get('verbosity', 0))
+        if verbosity > 1:
             update.log.setLevel(logging.DEBUG)
-        elif options.get('quiet'):
+        elif verbosity < 1:
             update.log.setLevel(logging.WARNING)
 
         if options.get('rebuild'):
@@ -41,4 +38,3 @@ class Command(BaseCommand):
         else:
             raise CommandError("You need to specify either --update or "
                 "--full-rebuild")
-
