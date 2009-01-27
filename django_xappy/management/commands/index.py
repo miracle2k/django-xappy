@@ -17,10 +17,6 @@ class Command(BaseCommand):
             help='Handle changed records since last update. '
                  'This brings the index up-to-date with the changes '
                  'flagged in the database.'),
-
-        make_option('-q', '--quiet', action='store_true',
-            dest='quiet', default=False,
-            help='be extra quiet'),
     )
     help = "Update the search index."
 
