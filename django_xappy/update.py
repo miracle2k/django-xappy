@@ -15,7 +15,7 @@ log.addHandler(console)
 log.setLevel(logging.INFO)
 
 
-
+# TODO: use transaction for delete?
 def rebuild(indexes=None, clear_changes=False):
     """Fully rebuild indixes from scratch, based on current database.
 
