@@ -696,7 +696,7 @@ class XapianResults(object):
         accessible for us via index 0-9, but requested using 50-59).
         """
         if isinstance(key, int):
-            return self._mkresult(index-self.offset)
+            return self._mkresult(key-self.offset)
         elif isinstance(key, slice):
             result = []
             for i in range(*key.indices(self.count)):
