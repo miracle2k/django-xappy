@@ -51,7 +51,7 @@ def action(fieldtype, **kwargs):
     return decorator
 
 
-def unicodify(what):
+def unicodify(what, ignore_errors=False):
     """Helper that allows us to easily expose xappy with a Unicode
     interface.
 
@@ -65,11 +65,11 @@ def unicodify(what):
     if isinstance(what, unicode):
         return what
     elif isinstance(what, str):
-        return what.decode('utf8')
+        return what.decode('utf8', ignore_errors and 'ignore' or 'strict')
     elif isinstance(what, dict):
         raise NotImplementedError()
     elif isinstance(what, (list, tuple)):
-        result = [unicodify(x) for x in what]
+        result = [unicodify(x, ignore_errors=ignore_errors) for x in what]
         if isinstance(what, tuple):
             return tuple(result)
         return result
@@ -798,10 +798,15 @@ class XapianResult(object):
                 return ''
 
     def highlight(self, field):
-        return mark_safe(unicodify(self._result.highlight(field)[0]))
+        # We need to ignore errors here since xappy/xapian may accidentally
+        # return incomplete characters with bytes cut off here, not knowing
+        # about unicode, which then causes the conversion to fail.
+        return mark_safe(unicodify(self._result.highlight(field)[0], 
+                                    ignore_errors=True))
 
     def summarise(self, field, maxlen=180):
-        return mark_safe(unicodify(self._result.summarise(field, maxlen=maxlen)))
+        return mark_safe(unicodify(self._result.summarise(field, maxlen=maxlen),
+                                    ignore_errors=True ))
 
     # expose the above in Django templates
     @template_callable
