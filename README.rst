@@ -12,7 +12,7 @@ is Xappy-specific.
 
 
 Status
------
+====
 
 This has not been actively worked on for a while; Neither has the Xappy_
 library this is based on. You may want to have a look at `django-haystack`_,
