@@ -2,15 +2,28 @@
 Django/Xappy search integration
 ===============================
 
-Bridges Xappy (an interface to the Xapian search engine) with Django.
+Bridges Xappy_ (an interface to the Xapian search engine) with Django.
 
-While other projects, like the GSoC 2008 project[1] try to be generic
+While other projects, like the `GSoC 2008 project
+<http://code.google.com/p/djangosearch/>`_ try to be generic
 and support a common set of functionality, this allows you to take
 full advantage of the features provided by Xappy. On the downside, it
 is Xappy-specific.
 
 
-[1] http://code.google.com/p/djangosearch/
+Status
+-----
+
+This has not been actively worked on for a while; Neither has the Xappy_
+library this is based on. You may want to have a look at `django-haystack`_,
+which also supports Xappy.
+
+Still, I'll happily merge patches to this repository, even if I'm not at this time
+working on it myself.
+
+
+.. _Xappy: http://code.google.com/p/xappy/
+.. _django-haystack: http://haystacksearch.org/
 
 
 Dependencies
