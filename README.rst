@@ -50,7 +50,7 @@ Defining an index
 
 The first step is to define the index. This primarily entails the fields
 that the index is supposed to have, and the Xappy actions to apply to
-each field:
+each field::
 
     import django_xappy as search
     from django_xappy import action, FieldActions
@@ -78,7 +78,7 @@ reason, you define fields as methods and return the appropriate value for
 the model instance in ``self.content_object`` (your ``Data`` class is
 the proxy that wraps around the objects to be indexed).
 
-Example:
+Example::
 
     @action(FieldActions.INDEX_FREETEXT)
     @action(FieldActions.STORE_CONTENT)
@@ -97,6 +97,8 @@ Registering the models
 
 Once your index is defined, you must tell it which models it handles.
 Note that a model can be registerd with multiple indexes.
+
+::
 
     MyIndex.register(Book)
     MyIndex.register(auth.User)
@@ -128,11 +130,13 @@ To connect to your index, simply create an instance:
     default location (for example, the update code), so this is really
     only useful in rare cases.
 
-To search, just do:
+To search, just do::
 
     results = index.search('who am i')
 
 This will give you the first ten results.
+
+::
 
     results = index.search('who am i', page=3, num_per_page=5)
 
@@ -144,7 +148,7 @@ See the **Advanced Usage** section for more about pagination.
 
     You can also modify the index, although you usually don't need to
     (and shouldn't) do this. Use the provided update scripts instead.
-    For example, to add a document:
+    For example, to add a document::
 
         f = Film.objects.get(pk=1)
         index.add(f)
@@ -162,7 +166,7 @@ In templates
 Usually, you would pass the results collection that is returned by
 ``search()`` into your template.
 
-There, you can simply iterate over it:
+There, you can simply iterate over it::
 
     {% if results %}
         {% for result in results %}
@@ -172,7 +176,7 @@ There, you can simply iterate over it:
 
 ``result.content_object`` gives you access to the orignal model
 instance. If you used the STORE_CONTENT action on some of your
-fields, you may instead those values using on of:
+fields, you may instead those values using on of::
 
     {{ result.some_field }}
     {{ result.highlighted.some_field }}
@@ -185,11 +189,13 @@ Since django-xappy logs all changes to your models instead of applying
 them directly, you need to update your index in regular intervals.
 
 A management command is available to help you with this. Provided you
-have **django-xappy** in your ``INSTALLED_APPS`` list, you can do:
+have **django-xappy** in your ``INSTALLED_APPS`` list, you can do::
 
     $ ./manage.py index --update
 
 for an incremental update, and
+
+::
 
     $ ./manage.py index --full-rebuild
 
@@ -219,7 +225,7 @@ the search method. All of Xappy's query builders are exposed by the
 index.
 
 For example, say you want to restrict the user's search to results from
-a certain category:
+a certain category::
 
 	q = index.query_parse(request.GET.get('q'))
 	q = index.query_filter(
@@ -248,7 +254,7 @@ support for pagination with respect to display, i.e. rendering **next**
 and **previous** links etc.
 
 You can however use an external paginator to do this, like the one that
-Django has builtin:
+Django has builtin::
 
     from django.core.paginator import Paginator
     Paginator(results, num_per_page).page(page)
@@ -261,7 +267,7 @@ Multiple field values
 
 Sometimes, you may want to add a field multiple times to the index, for
 example, if you are using the TAG action. To do this, simply make your
-data function a generator:
+data function a generator::
 
 	class Data:
 		@action(FieldActions.TAG)
@@ -273,7 +279,7 @@ Partial model registration
 --------------------------
 
 Rather than registering a full model, you can also just pass a queryset
-to ``register``:
+to ``register``::
 
     MyIndex.register(Book.objects.all(is_public=True))
 
@@ -290,7 +296,7 @@ Custom update scripts
 
 If you don't like to use the management command, you can create a
 standalone update script. A default script is provided that you
-can easily wrap around:
+can easily wrap around::
 
     # 1) SETUP DJANGO
     ...
@@ -320,7 +326,7 @@ OpenSearch
 
 Limited functionality to work with OpenSearch is included.
 
-For more information about OpenSearch, see:
+For more information about OpenSearch, see::
 
     http://www.opensearch.org/
     http://www.opensearch.org/Specifications/OpenSearch/1.1
