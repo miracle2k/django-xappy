@@ -12,14 +12,18 @@ is Xappy-specific.
 
 
 Status
-====
+======
 
-This has not been actively worked on for a while; Neither has the Xappy_
-library this is based on. You may want to have a look at `django-haystack`_,
-which also supports Xappy.
+This has not been worked on for a while; Neither has the Xappy_ library this
+is based on. You may want to have a look at `django-haystack`_,
+which also supports Xapian.
 
-Still, I'll happily merge patches to this repository, even if I'm not at this time
-working on it myself.
+This probably won't change. I quite like Haystack, and I would likely
+prefer to work on exposing more native Xapian features via the Haystack
+API, where required.
+
+Still, I'll happily merge patches to this repository, even if I'm not
+at this time working on it myself.
 
 
 .. _Xappy: http://code.google.com/p/xappy/
